@@ -1,0 +1,5 @@
+{
+  "name": "Wine Journal",
+  "description": "A clean and user-friendly application to browse, rate, and take notes on your saved wines. Easily sort, filter, and search your personal wine journal.",
+  "requestFramePermissions": []
+}
