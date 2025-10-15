@@ -1,4 +1,7 @@
 import React, { useState, useMemo } from 'react';
+import { useEffect } from 'react';
+import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc } from "firebase/firestore";
+import { db } from "./firebase";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import Header from './components/Header';
 import WineCard from './components/WineCard';
@@ -10,7 +13,34 @@ import ActionBar from './components/ActionBar';
 type ModalState = 'closed' | 'asking' | 'loading' | 'confirming' | 'editing';
 
 const App: React.FC = () => {
-  const [wineEntries, setWineEntries] = useState<WineEntry[]>(mockWineData);
+  const [wineEntries, setWineEntries] = useState<WineEntry[]>([]);
+  // Load wines from Firestore on mount
+  useEffect(() => {
+    const fetchWines = async () => {
+      const querySnapshot = await getDocs(collection(db, "wines"));
+      const wines: WineEntry[] = querySnapshot.docs.map(docSnap => {
+        const data = docSnap.data();
+        return {
+          id: docSnap.id,
+          name: data.name || '',
+          vintage: data.vintage || 0,
+          varietal: data.varietal || '',
+          country: data.country || '',
+          description: data.description || '',
+          imageUrl: data.imageUrl || '',
+          publicRating: data.publicRating || 0,
+          reviewCount: data.reviewCount || 0,
+          ratingSource: data.ratingSource || '',
+          price: data.price || 0,
+          rating: data.rating || 0,
+          notes: data.notes || '',
+          dateAdded: data.dateAdded || '',
+        };
+      });
+      setWineEntries(wines);
+    };
+    fetchWines();
+  }, []);
   const [searchTerm, setSearchTerm] = useState('');
   
   const [modalState, setModalState] = useState<ModalState>('closed');
@@ -111,22 +141,38 @@ const App: React.FC = () => {
   };
 
   const handleAddWine = (newWineData: Omit<WineEntry, 'id' | 'dateAdded'>) => {
-    const newWine: WineEntry = {
-      ...newWineData,
-      id: Date.now(),
-      dateAdded: new Date().toISOString(),
+    const addWine = async () => {
+      try {
+        console.log('Saving wine to Firestore:', newWineData);
+        const wineToAdd = {
+          ...newWineData,
+          dateAdded: new Date().toISOString(),
+        };
+        const docRef = await addDoc(collection(db, "wines"), wineToAdd);
+        setWineEntries(prevEntries => [{ ...wineToAdd, id: docRef.id }, ...prevEntries]);
+        handleCloseModal();
+      } catch (error) {
+        console.error('Error saving wine to Firestore:', error);
+        setApiError('Failed to save wine. Please check your connection and Firebase setup.');
+      }
     };
-    setWineEntries(prevEntries => [newWine, ...prevEntries]);
-    handleCloseModal();
+    addWine();
   };
   
   const handleUpdateWine = (updatedWine: WineEntry) => {
-    setWineEntries(prevEntries => 
-      prevEntries.map(wine => 
-        wine.id === updatedWine.id ? updatedWine : wine
-      )
-    );
-    handleCloseModal();
+    const updateWine = async () => {
+      const wineRef = doc(db, "wines", String(updatedWine.id));
+      // Do not send 'id' field to Firestore
+      const { id, ...wineData } = updatedWine;
+      await updateDoc(wineRef, wineData);
+      setWineEntries(prevEntries =>
+        prevEntries.map(wine =>
+          wine.id === updatedWine.id ? updatedWine : wine
+        )
+      );
+      handleCloseModal();
+    };
+    updateWine();
   };
 
   const handleStartEdit = (wine: WineEntry) => {
@@ -142,7 +188,12 @@ const App: React.FC = () => {
   };
 
   const handleDeleteWine = (id: number) => {
-    setWineEntries(prevEntries => prevEntries.filter(wine => wine.id !== id));
+    const deleteWine = async () => {
+      const wineRef = doc(db, "wines", String(id));
+      await deleteDoc(wineRef);
+      setWineEntries(prevEntries => prevEntries.filter(wine => wine.id !== id));
+    };
+    deleteWine();
   };
 
   const filteredAndSortedWines = useMemo(() => {

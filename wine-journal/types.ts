@@ -1,5 +1,5 @@
 export interface WineEntry {
-  id: number;
+  id: string;
   name: string;
   vintage: number;
   varietal: string;
