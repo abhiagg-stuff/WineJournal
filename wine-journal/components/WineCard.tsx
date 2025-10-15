@@ -37,6 +37,13 @@ const WineCard: React.FC<WineCardProps> = ({ wine, onDelete, onEdit }) => {
     }).format(price);
   }
 
+  const [imgSrc, setImgSrc] = useState(wine.imageUrl || 'https://i.postimg.cc/xdvXnqyP/Wine-bottle.jpg');
+
+const handleImgError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+  e.currentTarget.onerror = null; 
+  setImgSrc('https://i.postimg.cc/xdvXnqyP/Wine-bottle.jpg');
+};
+
   return (
     <>
       <div 
@@ -49,7 +56,12 @@ const WineCard: React.FC<WineCardProps> = ({ wine, onDelete, onEdit }) => {
       >
         <div className="flex">
           <div className="flex-shrink-0">
-            <img className="h-32 w-24 object-cover" src={wine.imageUrl} alt={`Bottle of ${wine.name}`} referrerPolicy="no-referrer" />
+            <img
+              className="h-32 w-24 object-cover"
+              src={imgSrc}
+              alt={`Bottle of ${wine.name}`}
+              onError={handleImgError}
+            />
           </div>
           <div className="relative p-4 flex-grow">
             <div className="flex justify-between items-start">
