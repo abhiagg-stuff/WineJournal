@@ -54,7 +54,7 @@ const RatingSlider: React.FC<RatingSliderProps> = ({ rating, onRatingChange }) =
             }}
           >
             <StarIcon 
-              className="w-8 h-8 fill-current text-amber-500"
+              className="w-8 h-8 fill-current text-red-800"
             />
           </div>
         </div>

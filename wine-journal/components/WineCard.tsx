@@ -50,7 +50,7 @@ const WineCard: React.FC<WineCardProps> = ({ wine, onDelete, onEdit }) => {
   return (
     <>
       <div 
-        className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300 ease-in-out cursor-pointer"
+        className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-300 ease-in-out cursor-pointer"
         onClick={() => onEdit(wine)}
         role="button"
         tabIndex={0}
@@ -60,26 +60,30 @@ const WineCard: React.FC<WineCardProps> = ({ wine, onDelete, onEdit }) => {
         <div className="flex">
           <div className="flex-shrink-0">
             <img
-              className="h-32 w-24 object-cover"
+              className="h-24 w-16 object-cover"
               src={imgSrc}
               alt={`Bottle of ${wine.name}`}
               onError={handleImgError}
             />
           </div>
-          <div className="relative p-4 flex-grow">
+          <div className="relative p-3 flex-grow">
             <div className="flex justify-between items-start">
-              <div className="pr-4 flex-grow">
+              <div className="pr-3 flex-grow">
                 <div className="uppercase tracking-wide text-xs text-red-800 font-semibold">{wine.varietal}</div>
-                <p className="block text-base leading-tight font-bold text-black">{wine.name}</p>
-                <p className="text-xs text-gray-500">{wine.vintage > 0 ? wine.vintage : 'N/V'} &bull; {wine.country}</p>
-                {wine.price && wine.price > 0 && (
-                  <p className="text-sm font-semibold text-gray-800 mt-1">{formatPrice(wine.price)}</p>
-                )}
+                <p className="block text-sm leading-tight font-bold text-black">{wine.name}</p>
+                <div className="flex items-center text-xs text-gray-500 space-x-2">
+                  <span>{wine.vintage > 0 ? wine.vintage : 'N/V'}</span>
+                  <span>&bull;</span>
+                  <span>{wine.country}</span>
+                  {wine.price > 0 && (
+                    <><span>&bull;</span><span className="font-bold text-black">{formatPrice(wine.price)}</span></>
+                  )}
+                </div>
                 {wine.publicRating && wine.publicRating > 0 && (
-                  <div className="flex items-center mt-1 text-xs text-gray-500">
-                    <StarIcon className="w-4 h-4 text-gray-400 mr-1" />
-                    <span className="font-semibold">{wine.publicRating.toFixed(1)}</span>
-                    <span className="ml-1">
+                  <div className="flex items-center text-xs text-gray-500">
+                    <StarIcon className="w-3 h-3 text-gray-400 mr-1" />
+                    <span className="font-medium">{wine.publicRating.toFixed(1)}</span>
+                    <span className="ml-1 text-xs">
                       ({new Intl.NumberFormat().format(wine.reviewCount || 0)} on {wine.ratingSource})
                     </span>
                   </div>
@@ -109,7 +113,7 @@ const WineCard: React.FC<WineCardProps> = ({ wine, onDelete, onEdit }) => {
                           }}
                         >
                           <StarIcon 
-                            className="w-5 h-5 fill-current text-amber-500"
+                            className="w-5 h-5 fill-current text-red-800"
                           />
                         </div>
                       </div>

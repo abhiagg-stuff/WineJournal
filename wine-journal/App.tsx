@@ -354,16 +354,20 @@ const App: React.FC = () => {
 
  return (
    <div className="min-h-screen bg-gray-50 font-sans text-gray-800">
-     <div className="container mx-auto max-w-4xl p-4 sm:p-6 lg:p-8 pb-28">
-       <div className="flex justify-between items-center">
-         <Header user={user} />
-         <div>
-           {user ? (
-             <button onClick={handleLogout} className="px-4 py-2 bg-red-800 text-white rounded-lg hover:bg-red-900">Logout</button>
-           ) : (
-             <button onClick={() => setShowAuthModal(true)} className="px-4 py-2 bg-red-800 text-white rounded-lg hover:bg-red-900">Sign in</button>
-           )}
-         </div>
+     <div className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 pb-28">
+       <div className="pt-4 sm:pt-6 lg:pt-8">
+         <Header 
+           user={user}
+           rightContent={
+             user ? (
+               <button onClick={handleLogout} className="text-sm text-gray-600 hover:text-red-800 hover:underline font-medium transition-colors">Logout</button>
+             ) : (
+               <button onClick={() => setShowAuthModal(true)} className="px-4 py-2 bg-red-800 text-white rounded-lg hover:bg-red-900">Sign in</button>
+             )
+           }
+           searchTerm={searchTerm}
+           onSearchChange={setSearchTerm}
+         />
        </div>
      {showAuthModal && (
        <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center p-4" aria-modal="true" role="dialog">
@@ -372,10 +376,10 @@ const App: React.FC = () => {
            <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">{isSignUp ? 'Sign Up' : 'Login'}</h2>
            {authError && <p className="text-red-600 bg-red-100 p-3 rounded-md mb-4 text-sm">{authError}</p>}
            <form onSubmit={isSignUp ? handleSignUp : handleLogin} className="space-y-4">
-             <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" required className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none" />
-             <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Password" required className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none" />
+             <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" required className="w-full px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-red-800 focus:border-transparent" />
+             <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Password" required className="w-full px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-red-800 focus:border-transparent" />
              {isSignUp && (
-               <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Confirm Password" required className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none" />
+               <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Confirm Password" required className="w-full px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-red-800 focus:border-transparent" />
              )}
              <button type="submit" className="w-full px-6 py-2 bg-red-800 text-white rounded-lg hover:bg-red-900">
                {isSignUp ? 'Sign Up' : 'Login'}
