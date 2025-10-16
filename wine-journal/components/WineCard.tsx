@@ -39,10 +39,13 @@ const WineCard: React.FC<WineCardProps> = ({ wine, onDelete, onEdit }) => {
 
   const [imgSrc, setImgSrc] = useState(wine.imageUrl || 'https://i.postimg.cc/xdvXnqyP/Wine-bottle.jpg');
 
-const handleImgError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-  e.currentTarget.onerror = null; 
-  setImgSrc('https://i.postimg.cc/xdvXnqyP/Wine-bottle.jpg');
-};
+  const handleImgError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    e.currentTarget.onerror = null; 
+    // Only fallback to default image if the current image is not a base64 string
+    if (!imgSrc.startsWith('data:')) {
+      setImgSrc('https://i.postimg.cc/xdvXnqyP/Wine-bottle.jpg');
+    }
+  };
 
   return (
     <>

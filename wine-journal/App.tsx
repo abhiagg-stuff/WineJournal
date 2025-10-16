@@ -252,7 +252,7 @@ const App: React.FC = () => {
        varietal: data.varietal || '',
        country: data.country || '',
        description: data.description || '',
-       imageUrl: data.imageUrl || 'https://i.postimg.cc/xdvXnqyP/Wine-bottle.jpg',
+       imageUrl: imageData ? `data:${imageFile?.type};base64,${imageData.inlineData.data}` : (data.imageUrl || 'https://i.postimg.cc/xdvXnqyP/Wine-bottle.jpg'),
        publicRating: data.publicRating || 0,
        reviewCount: data.reviewCount || 0,
        ratingSource: data.ratingSource || '',
@@ -272,9 +272,16 @@ const App: React.FC = () => {
  const handleAddWine = (newWineData: Omit<WineEntry, 'id' | 'dateAdded'>) => {
    const addWine = async () => {
      try {
+       // If the imageUrl is a base64 string from our upload, we'll keep it
+       // If it's a URL and upload failed, we'll use the default or research URL
+       const imageUrl = newWineData.imageUrl?.startsWith('data:') 
+         ? newWineData.imageUrl 
+         : (newWineData.imageUrl || 'https://i.postimg.cc/xdvXnqyP/Wine-bottle.jpg');
+
        console.log('Saving wine to Firestore:', newWineData);
        const wineToAdd = {
          ...newWineData,
+         imageUrl, // Use our processed imageUrl
          dateAdded: new Date().toISOString(),
        };
        const docRef = await addDoc(collection(db, "wines"), wineToAdd);
