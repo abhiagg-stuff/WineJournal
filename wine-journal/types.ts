@@ -4,7 +4,7 @@ export interface WineEntry {
   vintage: number;
   varietal: string;
   country: string;
-  rating: number; // User's personal rating 1-10
+  rating: number; // User's personal rating 1-5
   notes: string; // User's personal notes
   description?: string; // Sourced from research
   imageUrl: string;

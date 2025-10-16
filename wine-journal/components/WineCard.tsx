@@ -86,10 +86,35 @@ const WineCard: React.FC<WineCardProps> = ({ wine, onDelete, onEdit }) => {
                 )}
               </div>
               <div className="flex-shrink-0 pl-4 flex flex-col items-center justify-center text-center">
-                <p className="text-xs text-gray-500 -mb-1 uppercase font-semibold">Rating</p>
-                <div>
-                  <span className="text-3xl font-bold text-red-800 tracking-tight">{wine.rating}</span>
-                  <span className="text-sm text-gray-500 font-semibold">/10</span>
+                <p className="text-xs text-gray-500 -mb-1 uppercase font-semibold">My Rating</p>
+                <div className="flex items-center mt-1 gap-0.5">
+                  {[1, 2, 3, 4, 5].map((star) => {
+                    const isHalfStar = star - 0.5 === Math.floor(wine.rating * 2) / 2;
+                    const isFilled = star <= wine.rating;
+                    
+                    return (
+                      <div key={star} className="relative w-5 h-5">
+                        {/* Background star (empty) */}
+                        <StarIcon 
+                          className="absolute inset-0 w-5 h-5 text-gray-300"
+                          aria-label={`${star} star${star === 1 ? '' : 's'}`}
+                        />
+                        
+                        {/* Foreground star (filled) */}
+                        <div 
+                          className="absolute inset-0 overflow-hidden"
+                          style={{ 
+                            clipPath: isHalfStar ? 'inset(0 50% 0 0)' : undefined,
+                            width: isFilled || isHalfStar ? '100%' : '0%'
+                          }}
+                        >
+                          <StarIcon 
+                            className="w-5 h-5 fill-current text-amber-500"
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>

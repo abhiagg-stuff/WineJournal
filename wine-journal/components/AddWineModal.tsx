@@ -155,7 +155,7 @@ const DetailsView: React.FC<{
 }> = ({ initialData, onSave, onClose, isEditing }) => {
   // FIX: The 'rating' property only exists on 'WineEntry', not 'ResearchedData'.
   // Use a type guard to check for the property before accessing it, and provide a default.
-  const [userRating, setUserRating] = useState('rating' in initialData ? initialData.rating : 5);
+  const [userRating, setUserRating] = useState('rating' in initialData ? Math.min(initialData.rating, 5) : 3);
   const [personalNotes, setPersonalNotes] = useState(initialData.notes ?? '');
 
   const handleSave = (e: FormEvent) => {
@@ -221,13 +221,12 @@ const DetailsView: React.FC<{
       <hr className="my-6" />
 
       <form onSubmit={handleSave} className="space-y-4">
-        <div className="flex flex-col items-center w-full px-4">
+        <div className="flex flex-col items-center w-full px-4 mb-12">
             <label className="text-gray-800 font-semibold mb-2">Your Personal Rating</label>
             <RatingSlider rating={userRating} onRatingChange={setUserRating} />
         </div>
         
         <div>
-            <label className="text-gray-800 font-semibold mb-2 block text-center">Your Notes</label>
             <textarea 
                 name="notes" 
                 value={personalNotes} 
