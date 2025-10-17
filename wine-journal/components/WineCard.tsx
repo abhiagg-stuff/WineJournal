@@ -5,7 +5,7 @@ import StarIcon from './icons/StarIcon';
 
 interface WineCardProps {
   wine: WineEntry;
-  onDelete: (id: number) => void;
+  onDelete: (id: string) => void;
   onEdit: (wine: WineEntry) => void;
 }
 

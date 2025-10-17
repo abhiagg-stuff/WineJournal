@@ -10,6 +10,7 @@ import SearchAndFilter from './components/SearchAndFilter';
 import { WineEntry, ResearchedData, WineType, FilterOptions } from './types';
 import AddWineModal from './components/AddWineModal';
 import ActionBar from './components/ActionBar';
+import ChatInterface from './components/ChatInterface';
 
 
 type ModalState = 'closed' | 'asking' | 'loading' | 'confirming' | 'editing';
@@ -24,6 +25,7 @@ const App: React.FC = () => {
  const [password, setPassword] = useState('');
  const [confirmPassword, setConfirmPassword] = useState('');
  const [wineEntries, setWineEntries] = useState<WineEntry[]>([]);
+ const [isChatOpen, setIsChatOpen] = useState(false);
  // Load wines from Firestore on mount
  useEffect(() => {
    // Listen for auth state changes
@@ -184,16 +186,19 @@ const App: React.FC = () => {
      // 3. Initialize Gemini with the appropriate model
      const genAI = new GoogleGenerativeAI(apiKey);
      const model = genAI.getGenerativeModel({
-       model: "gemini-2.5-flash"
+       model: "gemini-2.5-pro",
+       generationConfig: {
+         temperature: 0.7
+       }
      });
 
 
      // 4. Prepare the prompt for either image or text analysis
      const prompt = `${imageFile ? "Analyze this wine label image" : `Research the wine${wineName ? ` "${wineName}"` : ""}`} and provide detailed information. ${
        imageFile ? "Extract all visible information from the label, then " : ""
-     }use Google Search to find details and ratings from reputable sources like Vivino.
-    
-     Return a single, minified JSON object with these keys:
+     }First, search online to find accurate, up-to-date information about this wine. Focus on reviews and ratings from reputable wine sources like Vivino, Wine Spectator, or Wine Enthusiast. Look up current market prices and availability.
+     
+     After thorough research, return a single, minified JSON object with these keys:
      - "name" (string): the full, correct wine name
      - "vintage" (number): the year, use current year if not specified, 0 for non-vintage
      - "varietal" (string): the grape variety or blend
@@ -345,8 +350,73 @@ const App: React.FC = () => {
    setApiError(null);
  };
 
+ const handleGenerateRecommendation = async (
+   prompt: string,
+   context: { cellarWines: WineEntry[]; likedWines: WineEntry[] }
+ ) => {
+   const apiKey = import.meta.env.VITE_API_KEY;
+   if (!apiKey) {
+     throw new Error("API key not found");
+   }
 
- const handleDeleteWine = (id: number) => {
+   const genAI = new GoogleGenerativeAI(apiKey);
+   const model = genAI.getGenerativeModel({
+     model: "gemini-2.5-pro",
+     generationConfig: {
+       temperature: 0.7
+     }
+   });
+
+   const formatWineList = (wines: WineEntry[]) => {
+     return wines.map(wine => ({
+       name: wine.name,
+       varietal: wine.varietal,
+       vintage: wine.vintage,
+       rating: wine.rating,
+       price: wine.price,
+       wineType: wine.wineType,
+       country: wine.country
+     }));
+   };
+
+   const systemPrompt = `You are a knowledgeable wine expert assistant. Use the provided context about the user's wine collection and preferences, combined with current market research, to give personalized recommendations.
+
+   Cellar Wines: ${JSON.stringify(formatWineList(context.cellarWines))}
+   Highly Rated Wines (4+ stars): ${JSON.stringify(formatWineList(context.likedWines))}
+
+   First, analyze the user's preferences based on their collection and highly rated wines. Then, search online for current wine availability, reviews, and pricing to make relevant recommendations.
+
+   Based on this research, provide specific recommendations that:
+   1. Consider the user's preferred wine types, varietals, and regions
+   2. Factor in their price range from previous purchases
+   3. Suggest both wines from their cellar and new wines that are currently available in the market
+   4. Include current ratings and reviews from trusted wine sources
+   5. Explain each recommendation with a brief reason why they might enjoy it
+
+   Keep responses conversational but concise.
+
+  Determine whether the user is explicitly asking for wines from their cellar (e.g., mentions "from my cellar", "what should I drink tonight", or otherwise limits to owned bottles). In that case, recommend only wines present in the Cellar Wines list, do not introduce new purchases, and replace the "Top Picks" section with "Cellar Picks" that highlights those specific cellar bottles. Skip the "Cellar Matches" section when you already provide "Cellar Picks".
+
+  Determine whether the user is explicitly asking what to purchase next (e.g., mentions "buy", "purchase", "pick up", "shopping list", or otherwise focuses on new acquisitions). In that case, focus on new-market recommendations, keep the "Top Picks" section, and omit the "Cellar Matches" section entirely even if relevant cellar wines exist.
+
+   Format the response as markdown using bullet points with bold category titles and bold wine names. Follow this structure, adapting it based on the prior rule:
+   - **Overview**: short summary sentence.
+   - If suggesting new wines, include **Top Picks**:
+     - **Wine Name** – key tasting notes, rating, price, and why it fits.
+   - If focused only on owned wines, include **Cellar Picks** instead:
+     - **Wine Name** – quick note on why it suits the request.
+  - **Cellar Matches** (only when Top Picks are present, the request is not strictly about purchasing, and relevant cellar wines exist):
+     - **Wine Name** – quick note on how it complements their collection.
+   - **Next Steps**: one actionable tip.`;
+
+   const result = await model.generateContent([systemPrompt, prompt]);
+
+   const response = result.response;
+   return response.text();
+ };
+
+
+ const handleDeleteWine = (id: string) => {
    const deleteWine = async () => {
      const wineRef = doc(db, "wines", String(id));
      await deleteDoc(wineRef);
@@ -393,6 +463,8 @@ const App: React.FC = () => {
        <div className="pt-4 sm:pt-6 lg:pt-8">
          <Header 
            user={user}
+           searchTerm={searchTerm}
+           onSearchChange={setSearchTerm}
            rightContent={
              user ? (
                <button onClick={handleLogout} className="text-sm text-gray-600 hover:text-red-800 hover:underline font-medium transition-colors">Logout</button>
@@ -405,8 +477,8 @@ const App: React.FC = () => {
            <div className="flex gap-2 items-center flex-wrap">
              {/* Filter Chips */}
              <SearchAndFilter
-               searchTerm=""
-               onSearchChange={() => {}}
+               searchTerm={searchTerm}
+               onSearchChange={setSearchTerm}
                filters={filters}
                onFilterChange={setFilters}
              />
@@ -498,6 +570,7 @@ const App: React.FC = () => {
          searchTerm={searchTerm}
          onSearchChange={setSearchTerm}
          onAddClick={() => setModalState('asking')}
+         onChatClick={() => setIsChatOpen(true)}
        />
        <AddWineModal
          modalState={modalState}
@@ -508,6 +581,12 @@ const App: React.FC = () => {
          researchedData={researchedData}
          editingWine={editingWine}
          apiError={apiError}
+       />
+       <ChatInterface
+         isOpen={isChatOpen}
+         onClose={() => setIsChatOpen(false)}
+         wines={wineEntries}
+         onGenerateRecommendation={handleGenerateRecommendation}
        />
    </div>
  );
