@@ -69,8 +69,15 @@ const WineCard: React.FC<WineCardProps> = ({ wine, onDelete, onEdit }) => {
           <div className="relative p-3 flex-grow">
             <div className="flex justify-between items-start">
               <div className="pr-3 flex-grow">
-                <div className="uppercase tracking-wide text-xs text-red-800 font-semibold">{wine.varietal}</div>
-                <p className="block text-sm leading-tight font-bold text-black">{wine.name}</p>
+                <div className="flex items-center gap-2">
+                  <div className="uppercase tracking-wide text-xs text-red-800 font-semibold">{wine.varietal}</div>
+                  {wine.wineType && (
+                    <div className="text-xs text-gray-500 capitalize">• {wine.wineType}</div>
+                  )}
+                </div>
+                <div>
+                  <p className="block text-sm leading-tight font-bold text-black">{wine.name}</p>
+                </div>
                 <div className="flex items-center text-xs text-gray-500 space-x-2">
                   <span>{wine.vintage > 0 ? wine.vintage : 'N/V'}</span>
                   <span>&bull;</span>
@@ -120,6 +127,13 @@ const WineCard: React.FC<WineCardProps> = ({ wine, onDelete, onEdit }) => {
                     );
                   })}
                 </div>
+                {wine.inCellar && (
+                  <div className="mt-1">
+                    <span className="inline-flex items-center whitespace-nowrap rounded-full bg-green-50 px-1.5 py-0.5 text-[10px] font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+                      In Cellar
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
             <p className="mt-2 text-gray-600 text-xs italic pr-12">"{noteSnippet}"</p>

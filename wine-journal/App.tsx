@@ -6,8 +6,9 @@ import { db } from "./firebase";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import Header from './components/Header';
 import WineCard from './components/WineCard';
+import SearchAndFilter from './components/SearchAndFilter';
 import { mockWineData } from './constants';
-import { WineEntry, ResearchedData } from './types';
+import { WineEntry, ResearchedData, WineType, FilterOptions } from './types';
 import AddWineModal from './components/AddWineModal';
 import ActionBar from './components/ActionBar';
 
@@ -115,6 +116,9 @@ const App: React.FC = () => {
          rating: data.rating || 0,
          notes: data.notes || '',
          dateAdded: data.dateAdded || '',
+         lastUpdated: data.lastUpdated || data.dateAdded || '',
+         inCellar: data.inCellar ?? false,
+         wineType: (data.wineType as WineType) || 'unknown',
        };
      });
      setWineEntries(wines);
@@ -122,7 +126,8 @@ const App: React.FC = () => {
    fetchWines();
  }, []);
  const [searchTerm, setSearchTerm] = useState('');
-  const [modalState, setModalState] = useState<ModalState>('closed');
+ const [filters, setFilters] = useState<FilterOptions>({ wineType: 'all', inCellar: 'all' });
+ const [modalState, setModalState] = useState<ModalState>('closed');
  const [researchedData, setResearchedData] = useState<ResearchedData>({});
  const [editingWine, setEditingWine] = useState<WineEntry | null>(null);
  const [apiError, setApiError] = useState<string | null>(null);
@@ -171,6 +176,12 @@ const App: React.FC = () => {
 
 
    try {
+     // Store the original image URL if we have one
+     let capturedImageUrl = '';
+     if (imageFile) {
+       capturedImageUrl = URL.createObjectURL(imageFile);
+     }
+
      // 3. Initialize Gemini with the appropriate model
      const genAI = new GoogleGenerativeAI(apiKey);
      const model = genAI.getGenerativeModel({
@@ -194,6 +205,7 @@ const App: React.FC = () => {
      - "ratingSource" (string): website providing the rating (e.g., "Vivino")
      - "price" (number): latest estimated price in USD, 0 if not found
      - "imageUrl" (string): direct, public URL to bottle image
+     - "wineType" (string): must be exactly one of: "red", "white", "rosé", "sparkling", or "dessert". Use available information to determine the type.
     
      If any value cannot be found, use empty string for strings or 0 for numbers.`;
 
@@ -252,11 +264,13 @@ const App: React.FC = () => {
        varietal: data.varietal || '',
        country: data.country || '',
        description: data.description || '',
-       imageUrl: imageData ? `data:${imageFile?.type};base64,${imageData.inlineData.data}` : (data.imageUrl || 'https://i.postimg.cc/xdvXnqyP/Wine-bottle.jpg'),
+       imageUrl: imageFile ? URL.createObjectURL(imageFile) : (data.imageUrl || 'https://i.postimg.cc/xdvXnqyP/Wine-bottle.jpg'),
        publicRating: data.publicRating || 0,
        reviewCount: data.reviewCount || 0,
        ratingSource: data.ratingSource || '',
        price: data.price || 0,
+         wineType: data.wineType as WineType || 'unknown',
+       inCellar: false, // Default to not in cellar for new wines
      });
      setModalState('confirming');
 
@@ -279,10 +293,14 @@ const App: React.FC = () => {
          : (newWineData.imageUrl || 'https://i.postimg.cc/xdvXnqyP/Wine-bottle.jpg');
 
        console.log('Saving wine to Firestore:', newWineData);
+       const now = new Date().toISOString();
        const wineToAdd = {
          ...newWineData,
          imageUrl, // Use our processed imageUrl
-         dateAdded: new Date().toISOString(),
+         dateAdded: now,
+         lastUpdated: now,
+         inCellar: newWineData.inCellar ?? false,
+         wineType: newWineData.wineType ?? 'unknown'
        };
        const docRef = await addDoc(collection(db, "wines"), wineToAdd);
        setWineEntries(prevEntries => [{ ...wineToAdd, id: docRef.id }, ...prevEntries]);
@@ -297,12 +315,18 @@ const App: React.FC = () => {
   const handleUpdateWine = (updatedWine: WineEntry) => {
    const updateWine = async () => {
      const wineRef = doc(db, "wines", String(updatedWine.id));
-     // Do not send 'id' field to Firestore
+     // Do not send 'id' field to Firestore and update the dateAdded
      const { id, ...wineData } = updatedWine;
-     await updateDoc(wineRef, wineData);
+     const updatedWineData = {
+       ...wineData,
+       lastUpdated: new Date().toISOString(),
+       inCellar: wineData.inCellar ?? false,
+       wineType: wineData.wineType ?? 'unknown'
+     };
+     await updateDoc(wineRef, updatedWineData);
      setWineEntries(prevEntries =>
        prevEntries.map(wine =>
-         wine.id === updatedWine.id ? updatedWine : wine
+         wine.id === updatedWine.id ? { ...updatedWine, dateAdded: updatedWineData.dateAdded } : wine
        )
      );
      handleCloseModal();
@@ -336,7 +360,7 @@ const App: React.FC = () => {
  const filteredAndSortedWines = useMemo(() => {
    let wines = [...wineEntries];
 
-
+   // Apply search filter
    if (searchTerm) {
      wines = wines.filter(wine =>
        wine.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -344,12 +368,24 @@ const App: React.FC = () => {
        wine.varietal.toLowerCase().includes(searchTerm.toLowerCase())
      );
    }
+
+   // Apply wine type filter - empty array if no types selected, otherwise filter by type
+   if (filters.wineType === 'none') {
+     wines = [];
+   } else if (filters.wineType !== 'all') {
+     wines = wines.filter(wine => wine.wineType === filters.wineType);
+   }
+
+   // Apply cellar filter
+   if (filters.inCellar !== 'all') {
+     wines = wines.filter(wine => wine.inCellar === filters.inCellar);
+   }
   
+   // Sort by date added
    wines.sort((a, b) => new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime());
 
-
    return wines;
- }, [wineEntries, searchTerm]);
+ }, [wineEntries, searchTerm, filters]);
 
 
  return (
@@ -365,9 +401,18 @@ const App: React.FC = () => {
                <button onClick={() => setShowAuthModal(true)} className="px-4 py-2 bg-red-800 text-white rounded-lg hover:bg-red-900">Sign in</button>
              )
            }
-           searchTerm={searchTerm}
-           onSearchChange={setSearchTerm}
          />
+         <div className="mt-4">
+           <div className="flex gap-2 items-center flex-wrap">
+             {/* Filter Chips */}
+             <SearchAndFilter
+               searchTerm=""
+               onSearchChange={() => {}}
+               filters={filters}
+               onFilterChange={setFilters}
+             />
+           </div>
+         </div>
        </div>
      {showAuthModal && (
        <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center p-4" aria-modal="true" role="dialog">
