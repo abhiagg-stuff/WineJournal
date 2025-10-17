@@ -7,7 +7,6 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import Header from './components/Header';
 import WineCard from './components/WineCard';
 import SearchAndFilter from './components/SearchAndFilter';
-import { mockWineData } from './constants';
 import { WineEntry, ResearchedData, WineType, FilterOptions } from './types';
 import AddWineModal from './components/AddWineModal';
 import ActionBar from './components/ActionBar';
