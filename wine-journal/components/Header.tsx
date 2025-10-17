@@ -31,7 +31,17 @@ const Header: React.FC<HeaderProps> = ({ user, rightContent, searchTerm, onSearc
       <div className="bg-gray-50">
         <div className="flex items-center justify-between mb-2">
           {displayName && (
-            <p className="text-sm font-medium text-gray-600">Welcome, {displayName}</p>
+            <div className="flex items-center gap-2">
+              {user?.photoURL && (
+                <img
+                  src={user.photoURL}
+                  alt="Profile"
+                  className="w-6 h-6 rounded-full"
+                  referrerPolicy="no-referrer"
+                />
+              )}
+              <p className="text-sm font-medium text-gray-600">Welcome, {displayName}</p>
+            </div>
           )}
           {rightContent}
         </div>
